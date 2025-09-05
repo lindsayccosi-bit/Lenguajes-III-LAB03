@@ -1,0 +1,172 @@
+public interface Weapon {
+    int calculateDamage(int level);
+}
+
+
+
+
+public class Espada implements Weapon {
+    private int baseDamage;
+
+    public Espada(int baseDamage) {
+        this.baseDamage = baseDamage;
+    }
+
+    @Override
+    public int calculateDamage(int level) {
+        return baseDamage * (level * 4);
+    }
+}
+
+
+
+public class Arco implements Weapon {
+    private int baseDamage;
+
+    public Arco(int baseDamage) {
+        this.baseDamage = baseDamage;
+    }
+
+    @Override
+    public int calculateDamage(int level) {
+        return baseDamage * (level * 3);
+    }
+}
+
+
+
+
+public class Hacha implements Weapon {
+    private int baseDamage;
+
+    public Hacha(int baseDamage) {
+        this.baseDamage = baseDamage;
+    }
+
+    @Override
+    public int calculateDamage(int level) {
+        return baseDamage + (level * 2);
+    }
+}
+
+
+
+public interface DamageModifier {
+    int modifyDamage(int baseDamage);
+}
+
+
+
+
+public class FireDamage implements DamageModifier {
+    @Override
+    public int modifyDamage(int baseDamage) {
+        return baseDamage + 15; // fuego suma daño fijo
+    }
+}
+
+
+
+
+import java.util.Random;
+
+public class CriticalDamage implements DamageModifier {
+    private Random random = new Random();
+
+    @Override
+    public int modifyDamage(int baseDamage) {
+        // 30% probabilidad de crítico
+        if (random.nextInt(100) < 30) {
+            System.out.println("¡Golpe Crítico!");
+            return baseDamage * 2;
+        }
+        return baseDamage;
+    }
+}
+
+
+
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Character {
+    protected String name;
+    protected int health;
+    protected Weapon weapon;
+    protected List<DamageModifier> modifiers = new ArrayList<>();
+
+    public Character(String name, int health, Weapon weapon) {
+        this.name = name;
+        this.health = health;
+        this.weapon = weapon;
+    }
+
+    public void addModifier(DamageModifier modifier) {
+        modifiers.add(modifier);
+    }
+
+    public void attack(Character target, int level) {
+        int damage = weapon.calculateDamage(level);
+
+        // aplicar modificadores
+        for (DamageModifier m : modifiers) {
+            damage = m.modifyDamage(damage);
+        }
+
+        target.receiveDamage(damage);
+        System.out.println(name + " atacó a " + target.name + " con "
+                + weapon.getClass().getSimpleName()
+                + " causando " + damage + " de daño.");
+    }
+
+    public void receiveDamage(int damage) {
+    	health -= damage;
+        if (health < 0) {
+            health = 0; // no permitir vida negativa
+        }
+        System.out.println(name + " ahora tiene " + health + " de vida.");
+    }
+
+    public boolean isAlive() {
+        return health > 0;
+    }
+}
+
+
+
+
+public class Combate {
+    public static void main(String[] args) {
+        // armas
+        Weapon espada = new Espada(40);
+        Weapon arco = new Arco(30);
+        Weapon hacha = new Hacha(25);
+
+        // personajes
+        Character jugador = new Character("Jugador", 200, espada);
+        jugador.addModifier(new FireDamage());
+        jugador.addModifier(new CriticalDamage());
+
+        Character enemigo = new Character("Orco", 150, hacha);
+        enemigo.addModifier(new CriticalDamage()); // el orco también puede hacer críticos
+
+        int turno = 1;
+        while (jugador.isAlive() && enemigo.isAlive()) {
+            System.out.println("\n---- Turno " + turno + " ----");
+            jugador.attack(enemigo, 5);
+
+            if (enemigo.isAlive()) {
+                enemigo.attack(jugador, 4);
+            }
+            turno++;
+        }
+
+        System.out.println("\n===== RESULTADO =====");
+        if (jugador.isAlive()) {
+            System.out.println("¡El jugador ha ganado!");
+        } else {
+            System.out.println("El enemigo ha ganado...");
+        }
+    }
+}
