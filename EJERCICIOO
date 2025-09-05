@@ -1,0 +1,467 @@
+// PROMOCION INTERFACE Y CLASES QUE LA IMPLEMENTAN
+
+package project;
+
+public interface Promocion {
+    // M�todo para aplicar un descuento sobre el costo base de la reserva
+    double aplicarDescuento(double costo);
+}
+
+
+public class PromocionClienteFrecuente implements Promocion {
+    @Override
+    public double aplicarDescuento(double costo) {
+        return costo * 0.8; // descuento 20%
+    }
+}
+
+public class PromocionTemporada implements Promocion {
+    @Override
+    public double aplicarDescuento(double costo) {
+        return costo * 0.8; // 20% de descuento
+    }
+}
+
+public class PromocionTemporadaAlta implements Promocion {
+    @Override
+    public double aplicarDescuento(double costo) {
+        return costo * 1.2; // aumenta 20%
+    }
+}
+
+
+public class PromocionVIP implements Promocion {
+    @Override
+    public double aplicarDescuento(double costo) {
+        return costo * 0.7; // 30% de descuento
+    }
+}
+
+
+
+//  NOTIFICACION -------------------
+
+package project;
+
+public interface CanalNotificacion {
+    void enviarNotificacion(String mensaje);
+}
+
+
+public class NotificadorReserva {
+    private CanalNotificacion canal;
+
+    // Recibe un canal de notificación (correo, sms, slack, etc.)
+    public NotificadorReserva(CanalNotificacion canal) {
+        this.canal = canal;
+    }
+
+    public void notificar(String mensaje) {
+        canal.enviarNotificacion(mensaje);
+    }
+}
+
+public class EnviadorCorreo implements CanalNotificacion {
+    @Override
+    public void enviarNotificacion(String mensaje) {
+        System.out.println("Enviando CORREO: " + mensaje);
+    }
+}
+
+public class EnviadorSMS implements CanalNotificacion {
+    @Override
+    public void enviarNotificacion(String mensaje) {
+        System.out.println("Enviando SMS: " + mensaje);
+    }
+}
+
+
+//  POLITICA DE CANCELACION ----------------
+
+package project;
+
+//PoliticaCancelacion.java
+public interface PoliticaCancelacion {
+ // Metodo para calcular la penalidad seg�n la pol�tica aplicada
+	double calcularPenalidad(Reserva reserva);
+}
+
+public class PoliticaEstricta implements PoliticaCancelacion {
+    @Override
+    public double calcularPenalidad(Reserva reserva) {
+        // Penalidad del 100%: no se devuelve nada
+        return reserva.getCosto(); 
+    }
+}
+
+public class PoliticaFlexible implements PoliticaCancelacion {
+    @Override
+    public double calcularPenalidad(Reserva reserva) {
+        return 0; // Sin penalidad, permite cancelar hasta 24h antes
+    }
+}
+
+public class PoliticaModerada implements PoliticaCancelacion {
+    @Override
+    public double calcularPenalidad(Reserva reserva) {
+        // Penalidad del 50% si cancela fuera del rango permitido
+        return reserva.getCosto() * 0.5;
+    }
+} 
+
+
+//   SERVICIOS   ---------------
+
+package project;
+
+public interface ServicioComida {
+    void solicitarComida();
+}
+
+public interface ServicioLavanderia {
+    void solicitarLavanderia();
+}
+
+
+public interface ServicioLimpieza {
+    void solicitarLimpieza();
+}
+
+
+// CLASE HABITACION --------------------
+
+package project;
+
+public abstract class Habitacion {
+    protected int numero;
+    protected double precioBase;
+
+    public Habitacion(int numero, double precioBase) {
+        this.numero = numero;
+        this.precioBase = precioBase;
+    }
+
+    //Métodos para consultar el número y el precio base de la habitación.
+    public double getPrecioBase() {
+        return precioBase;
+    }
+
+    public int getNumero() {  
+        return numero;
+    }
+
+    public String getTipo() {   //Devuelve el nombre de la clase hija que se está usando.
+        return this.getClass().getSimpleName();   // Si es HabitacionSuite, devolverá "HabitacionSuite".
+    }
+
+    public int getId() {
+        return numero;  // Retorna el número de la habitación, que en este caso actúa como un ID único.
+    }
+
+    public boolean mismaHabitacion(Habitacion otra) {
+        return this.numero == otra.numero; // Si tienen el mismo número → devuelve true. caso contrario false
+    }
+}
+
+
+
+// CLASES HIJAS DE HABITACIÓN
+
+
+public class HabitacionDoble extends Habitacion implements ServicioLimpieza, ServicioComida {
+
+    public HabitacionDoble(int numero, double precioBase) {
+        super(numero, precioBase);
+    }
+
+    @Override
+    public void solicitarLimpieza() {
+        System.out.println("Limpieza solicitada para la habitaci�n doble " + numero);
+    }
+
+    @Override
+    public void solicitarComida() {
+        System.out.println("Comida solicitada para la habitaci�n doble " + numero);
+    }
+}
+
+
+package project;
+
+public class HabitacionIndividual extends Habitacion implements ServicioLimpieza {
+
+    public HabitacionIndividual(int numero, double precioBase) {
+        super(numero, precioBase);
+    }
+
+    @Override
+    public void solicitarLimpieza() {
+    	System.out.println("Limpieza programada para la habitación estándar #" + getId());
+    }
+}
+
+
+
+public class HabitacionSuite extends Habitacion implements ServicioLimpieza, ServicioComida {
+    public HabitacionSuite(int id, double precioBase) {
+        super(id, precioBase);
+    }
+
+    @Override
+    public String getTipo() {
+        return "Suite";
+    }
+
+    @Override
+    public void solicitarLimpieza() {
+        System.out.println("Limpieza programada para la suite #" + getId());
+    }
+
+    @Override
+    public void solicitarComida() {
+        System.out.println("Servicio de comida solicitado para la suite #" + getId());
+    }
+}
+
+
+
+
+// GestorDisponibilidadHabitacion ------------------
+
+package project;
+
+import java.util.*;
+
+public class GestorDisponibilidadHabitacion {
+    private List<Reserva> reservas;
+
+    public GestorDisponibilidadHabitacion() {
+        this.reservas = new ArrayList<>();
+    }
+
+    // Verificar si una habitación está disponible
+    public boolean estaDisponible(Habitacion habitacion) {
+        for (Reserva r : reservas) {
+            // Usamos el nuevo método mismaHabitacion en vez de equals
+            if (r.getHabitacion().mismaHabitacion(habitacion)) {   
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Registrar una reserva
+    public void registrarReserva(Reserva reserva) {
+        reservas.add(reserva);
+    }
+
+    // Cancelar una reserva
+    public void cancelarReserva(Reserva reserva) {
+        reservas.remove(reserva);
+    }
+
+    // Generar informe de ocupación usando for-each
+    public String generarInforme(Habitacion habitacion) {
+        long total = 0;
+
+        for (Reserva r : reservas) {
+            if (r.getHabitacion().mismaHabitacion(habitacion)) {
+                total++;
+            }
+        }
+
+        return "Habitación " + habitacion.getTipo() + " #" + habitacion.getId() +
+               " tiene " + total + " reservas.";
+    }
+    
+    
+    public void mostrarHistorialCliente(Cliente cliente) {
+        System.out.println("\nHistorial de reservas de " + cliente.getNombre() + ":");
+        for (Reserva r : cliente.getHistorialReservas()) {
+            System.out.println(r.getDetalle());
+        }
+    }
+
+}
+
+
+//   CalculadoraPrecioHabitacion  -----------------
+
+package project;
+
+public class CalculadoraPrecioHabitacion {
+    public double calcularPrecio(Habitacion habitacion, Promocion promo) {
+        double precio = habitacion.getPrecioBase();
+        if (promo != null) {
+            precio = promo.aplicarDescuento(precio);
+        }
+        return precio;
+    }
+}
+
+// CLASE CLIENTE  ----------------------------
+
+package project;
+
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Cliente {
+    private int id;
+    private String nombre;
+    private String contacto; // correo o teléfono
+    private List<Reserva> historialReservas; 
+
+    public Cliente(int id, String nombre, String contacto) {
+        this.id = id;
+        this.nombre = nombre;
+        this.contacto = contacto;
+        this.historialReservas = new ArrayList<>();
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getContacto() {
+        return contacto;
+    }
+
+    public void agregarReserva(Reserva reserva) {
+        historialReservas.add(reserva);
+    }
+
+    public List<Reserva> getHistorialReservas() {
+        return historialReservas;
+    }
+}
+
+
+// CLASE RESERVA -----------------
+
+package project;
+
+public class Reserva {
+    private int id;
+    private Cliente cliente;
+    private Habitacion habitacion;
+    private double costo;
+    private PoliticaCancelacion politica;
+    private Promocion promocion;
+
+    public Reserva(int id, Cliente cliente, Habitacion habitacion, double costo,
+                   PoliticaCancelacion politica, Promocion promocion) {
+        this.id = id;
+        this.cliente = cliente;
+        this.habitacion = habitacion;
+        this.costo = costo;
+        this.politica = politica;
+        this.promocion = promocion;
+        
+     // Asociar reserva al cliente automáticamente
+        cliente.agregarReserva(this);
+    }
+
+    // M�todo de cancelaci�n que delega la l�gica a la pol�tica asignada
+    public double cancelar() {
+        return politica.calcularPenalidad(this); 
+    }
+
+    public double calcularPrecioFinal() {
+        CalculadoraPrecioHabitacion calculadora = new CalculadoraPrecioHabitacion();
+        return calculadora.calcularPrecio(habitacion, promocion);
+    }
+
+    public double getCosto() {
+        return costo;
+    }
+
+    public Habitacion getHabitacion() {
+        return habitacion;
+    }
+
+    public String getDetalle() {
+        return "Reserva #" + id + " Cliente: " + cliente.getNombre()  + 
+        	   " | Contacto: " + cliente.getContacto() +
+               " | Habitaci�n: " + habitacion.getTipo() +
+               " | Costo Base: " + costo;
+    }
+}
+
+
+// CLASE MAIN -----------------------
+
+public class Main {
+    public static void main(String[] args) {
+        GestorDisponibilidadHabitacion gestor = new GestorDisponibilidadHabitacion();
+
+        Cliente cliente1 = new Cliente(1, "Juan Pérez", "juanperez@gmail.com");
+        Cliente cliente2 = new Cliente(2, "Martha Gomez", "marthag@gmail.com");
+        Cliente cliente3 = new Cliente(3, "Alejandro Salas", "alejansalas@gmail.com");
+
+        // Crear habitaciones
+        Habitacion suite = new HabitacionSuite(101, 500);
+        Habitacion doble = new HabitacionDoble(102, 320);
+        Habitacion individual = new HabitacionIndividual(103, 180);
+
+        // Crear y procesar reservas
+        procesarReserva(gestor, cliente1, suite, new PoliticaFlexible(), new PromocionVIP(), new EnviadorCorreo());
+        procesarReserva(gestor, cliente1, suite, new PoliticaModerada(), null, null);
+
+        procesarReserva(gestor, cliente3, doble, new PoliticaModerada(), new PromocionTemporadaAlta(), new EnviadorCorreo());
+
+        procesarReserva(gestor, cliente2, individual, new PoliticaFlexible(), new PromocionClienteFrecuente(), new EnviadorSMS());
+    }
+
+    private static void procesarReserva(GestorDisponibilidadHabitacion gestor,
+                                        Cliente cliente,
+                                        Habitacion habitacion,
+                                        PoliticaCancelacion politica,
+                                        Promocion promo,
+                                        CanalNotificacion canal) {
+        if (!gestor.estaDisponible(habitacion)) {
+            System.out.println("La habitación " + habitacion.getTipo() + " #" + habitacion.getId() + " no está disponible.");
+            return;
+        }
+
+        // Crear reserva
+        Reserva reserva = new Reserva(cliente.getHistorialReservas().size() + 1, cliente, habitacion,
+                habitacion.getPrecioBase(), politica, promo);
+
+        gestor.registrarReserva(reserva);
+
+        // Mostrar detalles
+        System.out.println("\n" + reserva.getDetalle());
+        System.out.println("Precio final: " + reserva.calcularPrecioFinal());
+        System.out.println("Penalidad por cancelación: " + reserva.cancelar());
+        System.out.println(gestor.generarInforme(habitacion));
+
+        // Solicitar servicios
+        System.out.println("\nServicios disponibles en la " + habitacion.getTipo() + ":");
+        verificarServicios(habitacion);
+
+        // Enviar notificación si hay canal definido
+        if (canal != null) {
+            NotificadorReserva notificador = new NotificadorReserva(canal);
+            notificador.notificar("Reserva #" + reserva.getDetalle() + " confirmada.");
+        }
+
+        // Mostrar historial del cliente
+        gestor.mostrarHistorialCliente(cliente);
+
+        System.out.println("--------------------------------------------------");
+    }
+
+    private static void verificarServicios(Habitacion habitacion) {
+        if (habitacion instanceof ServicioLimpieza) {
+            ((ServicioLimpieza) habitacion).solicitarLimpieza();
+        }
+        if (habitacion instanceof ServicioComida) {
+            ((ServicioComida) habitacion).solicitarComida();
+        }
+        if (habitacion instanceof ServicioLavanderia) {
+            ((ServicioLavanderia) habitacion).solicitarLavanderia();
+        }
+    }
+}
